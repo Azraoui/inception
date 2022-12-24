@@ -1,0 +1,106 @@
+version: '3'
+services: 
+    nginx:
+        build: ../nginx
+        image: nginx
+        container_name: nginx
+        ports:
+            - "443:443"
+        restart: always
+        volumes:
+            - wp_data:/var/www/html/
+        depends_on:
+            - wordpress
+        networks:
+            - dakhla_city
+
+    wordpress:
+        build: ../wordpress
+        image: wordpress
+        container_name: wordpress
+        ports:
+            - "9000"
+        restart: always
+        volumes:
+            - wp_data:/var/www/html/
+        networks:
+            - dakhla_city
+        env_file:
+            - ../../.env
+        depends_on:
+            - mariadb
+            - redis
+
+    mariadb:
+        build: ../mariadb
+        image: mariadb
+        container_name: mariadb
+        ports:
+            - "3306"
+        restart: always
+        networks:
+            - dakhla_city
+        env_file:
+            - ../../.env
+        volumes:
+            - db_data:/var/lib/mysql
+    adminer:
+        build: ./adminer/
+        image: adminer
+        container_name: adminer
+        ports:
+            - "777:777"
+        env_file:
+            - ../../.env
+        networks:
+            - dakhla_city
+        restart: unless-stopped
+    redis:
+        build: ./redis/
+        image: redis
+        container_name: redis
+        networks:
+            - dakhla_city
+        restart: unless-stopped
+    ftp:
+        build: ./ftp/
+        image: ftp
+        container_name: ftp
+        restart: unless-stopped
+        env_file:
+            - ../../.env
+        volumes:
+            - wp_data:/home/ael-azra
+        ports:
+            - "21:21"
+            - "10000:10000"
+        networks: 
+            - dakhla_city
+    website:
+        build: ./website/
+        image: website
+        container_name: website
+        restart: unless-stopped
+        env_file:
+          - ../../.env
+        ports:
+          - "1337:1337"
+
+volumes:
+    wp_data:
+        driver: local
+        driver_opts:
+            type: none
+            device: "/home/ael-azra/data/wordpress"
+            o: bind
+    db_data:
+        driver: local
+        driver_opts:
+            type: none
+            device: "/home/ael-azra/data/mysql"
+            o: bind
+
+networks:
+    dakhla_city:
+        name: dakhla_city
+        driver: bridge
